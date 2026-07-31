@@ -135,6 +135,25 @@ class VisualGridHuntGame:
     def is_done(self) -> bool:
         return len(self.food_positions) == 0 or self.steps >= 60 or self.collision
 
+class SimpleReflexAgent:
+    """A stateless agent that uses strict IF-THEN condition-action rules."""
+
+    def __init__(self):
+        pass
+    
+    edf sense_and_act(self, percept: dict) -> str:
+        """
+        Takes sensory input and returns an action string ('Up', 'Down', 'Left', 'Right').
+        """
+        wall_ahead = percept.get('wall_ahead', False)
+        food_here = percept.get('food_here', False)
+
+        # Simple Reflex Rule 1: If there's a wall ahead, reflexively turn/change direction
+        if wall_ahead:
+            return 'Up'# Reflexively try moving Up when blocked
+        # Simple Reflex Rule 2: Otherwise, move forward (defaulting to 'Right')
+        else:
+            return "Right"
 
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
@@ -213,9 +232,19 @@ class GridGameGUI:
     def run_loop(self):
         self.btn.config(state="disabled")
 
+        # Instantiate our reflex agent
+        agent = SimpleReflectAgent()
+
         def step():
             if not self.env.is_done():
-                action = random.choice(['Up', 'Down', 'Left', 'Right'])
+                # action = random.choice(['Up', 'Down', 'Left', 'Right'])
+
+                # 1. Get local percepts from the environment
+                percept = self.env.get_percept()
+
+                # 2. Let the agent decide an action using its reflex rules
+                action = agent.sense_and_act(percept)
+
                 self.env.execute_action(action)
 
                 self.draw_grid()
