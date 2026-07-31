@@ -141,7 +141,7 @@ class SimpleReflexAgent:
     def __init__(self):
         pass
     
-    edf sense_and_act(self, percept: dict) -> str:
+    def sense_and_act(self, percept: dict) -> str:
         """
         Takes sensory input and returns an action string ('Up', 'Down', 'Left', 'Right').
         """
@@ -154,6 +154,36 @@ class SimpleReflexAgent:
         # Simple Reflex Rule 2: Otherwise, move forward (defaulting to 'Right')
         else:
             return "Right"
+
+class ModelBasedAgent:
+    """An agent with internal state (memory) to track visited locations and avoid loops."""
+
+    def __init__(self):
+        # Internal state/memory components
+        self.visited_cells = set()
+        self.agent_pos = [0, 0] # Estimated internal position tracker
+        self.facing = 'Right' # Track estimated orientation
+        self.last_action = None
+
+    ded update_state(self, action: str, percept: dict):
+    """Transition Model & Sensor Model: Updates internal position and memory based on the last action."""
+    if action:
+        self.last_action = action
+
+        if action in ['Up', 'Down', 'Left', 'Right']:
+            self.facing = action
+
+        if action == 'Up':
+            self.agent_pos[1] += 1
+        elif action == 'Down':
+             self.agent_pos[1] = max(0, self.agent_pos[1] - 1)
+        elif action == 'Left':
+             self.agent_pos[0] = max(0, self.agent_pos[0] - 1)
+        elif action == 'Right':
+             self.agent_pos[0] += 1
+
+    # Record current position as visited
+        self.visited_cells.add(tuple(self.agent_pos))
 
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
