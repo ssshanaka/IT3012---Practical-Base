@@ -50,41 +50,29 @@ class VisualGridHuntGame:
         self.collision = False
 
     def get_percept(self) -> dict:
+        ax, ay = self.agent_pos
+        ahead_pos = [ax, ay]
+
+        # Calculate the coordinates of the cell directly ahead
+        if self.facing == 'Up':
+            ahead_pos[1] = min(self.height - 1, ay + 1)
+        elif self.facing == 'Down':
+            ahead_pos[1] = max(0, ay - 1)
+        elif self.facing == 'Left':
+            ahead_pos[0] = max(0, ax - 1)
+        elif self.facing == 'Right':
+            ahead_pos[0] = min(self.width - 1, ax + 1)
+
+        wall_is_ahead = tuple(ahead_pos) in self.walls or (
+            (self.facing == 'Up' and ay == self.height - 1) or
+            (self.facing == 'Down' and ay == 0) or
+            (self.facing == 'Left' and ax == 0) or
+            (self.facing == 'Right' and ax == self.width - 1)
+        )
+
         return {
-            # 'agent_pos': list(self.agent_pos),
-            # 'opponent_positions': [list(op) for op in self.opponents],
-            # 'smells_food': tuple(self.agent_pos) in self.food_positions,
-            # 'smells_toxin': tuple(self.agent_pos) in self.toxic_traps,
-            # 'hit_wall': tuple(self.agent_pos) in self.walls,
-            # 'collision': self.collision,
-            # 'score': self.score,
-            # 'remaining_food': len(self.food_positions)
-            
-            ax, ay = self.agent_pos
-            ahead_pos = [ax, ay]
-
-            # Calculate the coordinates of the cell directly ahead
-            if self.facing == 'Up':
-                ahead_pos[1] = min(self.height - 1, ay + 1)
-            elif self.facing == 'Down':
-                ahead_pos[1] = max(0, ay - 1)
-            elif self.facing == 'Left':
-                ahead_pos[0] = max(s0, ay - 1)
-            elif self.facing == 'Right':
-                ahead_pos[0] = min(self.width - 1, ay + 1)
-
-            wall_is_ahead = tuple(ahead_pos) in self.walls or (
-                (self.facing == 'Up' and ay == self.height - 1) or
-                (self.facing == 'Down' and ay == 0) or
-                (self.facing == 'Left' and ax == 0) or
-                (self.facing == 'Right' and ax == self.width - 1)
-            )
-
-            return {
-                'wall_ahead': wall_is_ahead,
-                'food_here': tuple(self.agent_pos) in self.food_positions
-            }
-
+            'wall_ahead': wall_is_ahead,
+            'food_here': tuple(self.agent_pos) in self.food_positions
         }
 
     def execute_action(self, action: str):
@@ -165,25 +153,61 @@ class ModelBasedAgent:
         self.facing = 'Right' # Track estimated orientation
         self.last_action = None
 
-    ded update_state(self, action: str, percept: dict):
-    """Transition Model & Sensor Model: Updates internal position and memory based on the last action."""
-    if action:
+    def update_state(self, action: str, percept: dict):
+        """Transition Model & Sensor Model: Updates internal position and memory based on the last action."""
+        if action:
+            self.last_action = action
+
+            if action in ['Up', 'Down', 'Left', 'Right']:
+                self.facing = action
+
+            if action == 'Up':
+                self.agent_pos[1] += 1
+            elif action == 'Down':
+                 self.agent_pos[1] = max(0, self.agent_pos[1] - 1)
+            elif action == 'Left':
+                 self.agent_pos[0] = max(0, self.agent_pos[0] - 1)
+            elif action == 'Right':
+                 self.agent_pos[0] += 1
+
+            # Record current position as visited
+            self.visited_cells.add(tuple(self.agent_pos))
+
+    def sense_and_act(self, percept: dict) -> str:
+        if self.last_action:
+            self.update_state(self.last_action, percept)
+        
+        wall_ahead = percept.get('wall_ahead', False)
+        
+        # Determine available moves
+        moves = ['Right', 'Up', 'Left', 'Down']
+        
+        # Exclude current facing direction if blocked by wall
+        if wall_ahead and self.facing in moves:
+            moves.remove(self.facing)
+            
+        # Prioritize unvisited cells based on our internal map
+        unvisited = []
+        for move in moves:
+            next_pos = list(self.agent_pos)
+            if move == 'Up': next_pos[1] += 1
+            elif move == 'Down': next_pos[1] -= 1
+            elif move == 'Left': next_pos[0] -= 1
+            elif move == 'Right': next_pos[0] += 1
+            
+            if tuple(next_pos) not in self.visited_cells:
+                unvisited.append(move)
+                
+        # Condition-Action Rules using memory:
+        if unvisited:
+            action = unvisited[0]
+        elif moves:
+            action = moves[0]
+        else:
+            action = 'Right'
+            
         self.last_action = action
-
-        if action in ['Up', 'Down', 'Left', 'Right']:
-            self.facing = action
-
-        if action == 'Up':
-            self.agent_pos[1] += 1
-        elif action == 'Down':
-             self.agent_pos[1] = max(0, self.agent_pos[1] - 1)
-        elif action == 'Left':
-             self.agent_pos[0] = max(0, self.agent_pos[0] - 1)
-        elif action == 'Right':
-             self.agent_pos[0] += 1
-
-    # Record current position as visited
-        self.visited_cells.add(tuple(self.agent_pos))
+        return action
 
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
@@ -262,8 +286,8 @@ class GridGameGUI:
     def run_loop(self):
         self.btn.config(state="disabled")
 
-        # Instantiate our reflex agent
-        agent = SimpleReflectAgent()
+        # Instantiate our agent (changed to ModelBasedAgent to test Step 1.3)
+        agent = ModelBasedAgent()
 
         def step():
             if not self.env.is_done():
