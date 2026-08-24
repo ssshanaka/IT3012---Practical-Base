@@ -26,6 +26,9 @@ class SearchAgent:
         #Calculate the Manhattan distance between two positions.
         return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
 
+    def euclidean_distance(self, pos, goal):
+        return math.sqrt((pos[0] - goal[0])**2 + (pos[1] - goal[1])**2)
+
     def _get_neighbors(self, state, percept):
         x, y = state
         width, height = percept['grid_size']
