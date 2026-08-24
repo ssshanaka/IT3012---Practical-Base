@@ -72,7 +72,11 @@ class VisualGridHuntGame:
 
         return {
             'wall_ahead': wall_is_ahead,
-            'food_here': tuple(self.agent_pos) in self.food_positions
+            'food_here': tuple(self.agent_pos) in self.food_positions,
+            'grid_size': (self.width, self.height),
+            'walls': list(self.walls),
+            'all_food': list(self.food_positions),
+            'agent_pos': list(self.agent_pos)
         }
 
     def execute_action(self, action: str):
@@ -286,8 +290,9 @@ class GridGameGUI:
     def run_loop(self):
         self.btn.config(state="disabled")
 
-        # Instantiate our agent (changed to ModelBasedAgent to test Step 1.3)
-        agent = ModelBasedAgent()
+        # Instantiate our agent (changed to SearchAgent to test Step 1.3)
+        from agent import SearchAgent
+        agent = SearchAgent()
 
         def step():
             if not self.env.is_done():
