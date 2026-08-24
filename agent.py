@@ -128,3 +128,58 @@ class SearchAgent:
                 return random.choice(self.actions_pool)
 
         return self.plan.pop(0)
+
+    def astar_search(self, start_pos, goal_pos, walls, grid_size, heuristic_type='manhattan'):
+        """
+        A* Search Algorithm combining path cost g(n) and heuristic estimate h(n):
+        f(n) = g(n) + h(n)
+        """
+        start = tuple(start_pos)
+        goal = tuple(goal_pos)
+        walls_set = set(walls)
+        width, height = grid_size
+
+        # Choose heuristic function based on heuristic_type parameter
+        if heuristic_type == 'euclidean':
+            h_fn = self.euclidean_distance
+        else:
+            h_fn = self.manhattan_distance
+
+        # Initialize priority queue and reached dictionary (or set)
+        frontier = []
+        h_start = h_fn(start, goal)
+        heapq.heappush(frontier, (h_start, 0, start, []))
+        reached = {start: 0}
+
+        while frontier:
+            f_cost, g_cost, current, path = heapq.heappop(frontier)
+
+            # Goal check
+            if current == goal:
+                return path
+
+            if g_cost > reached.get(current, float('inf')):
+                continue
+
+            # Node expansion: 4-way movement
+            x, y = current
+            moves = [
+                ('Up', (x, y + 1)),
+                ('Down', (x, y - 1)),
+                ('Left', (x - 1, y)),
+                ('Right', (x + 1, y))
+            ]
+
+            for action, (nx, ny) in moves:
+                # Boundary and wall checks
+                if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in walls_set:
+                    neighbor = (nx, ny)
+                    g_new = g_cost + 1
+                    
+                    if g_new < reached.get(neighbor, float('inf')):
+                        reached[neighbor] = g_new
+                        h_new = h_fn(neighbor, goal)
+                        f_new = g_new + h_new
+                        heapq.heappush(frontier, (f_new, g_new, neighbor, path + [action]))
+
+        return []  # Return empty list if no path exists
