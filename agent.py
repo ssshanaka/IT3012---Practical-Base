@@ -1,4 +1,5 @@
 # agent.py
+import math
 import random
 from collections import deque
 import heapq
