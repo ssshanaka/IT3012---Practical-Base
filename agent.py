@@ -21,6 +21,10 @@ class SearchAgent:
         self.active_algo = 'BFS'
         self.actions_pool = ['Up', 'Down', 'Left', 'Right']
 
+    def manhattan_distance(self, pos, goal):
+        #Calculate the Manhattan distance between two positions.
+        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
+
     def _get_neighbors(self, state, percept):
         x, y = state
         width, height = percept['grid_size']
