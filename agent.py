@@ -4,6 +4,35 @@ import random
 from collections import deque
 import heapq
 
+class SimpleReflexAgent:
+    """Reflex agent that acts on immediate percepts."""
+    def __init__(self):
+        self.actions_pool = ['Up', 'Down', 'Left', 'Right']
+
+    def sense_and_act(self, percept: dict) -> str:
+        if percept.get('food_here'):
+            return 'Up'
+        if percept.get('wall_ahead'):
+            return 'Right'
+        return 'Up'
+
+
+class ModelBasedAgent:
+    """Model-based agent that maintains state to avoid loops."""
+    def __init__(self):
+        self.last_action = None
+        self.actions_pool = ['Up', 'Down', 'Left', 'Right']
+
+    def sense_and_act(self, percept: dict) -> str:
+        if percept.get('wall_ahead'):
+            choices = [a for a in self.actions_pool if a != self.last_action]
+            action = choices[0] if choices else 'Right'
+        else:
+            action = 'Up'
+        self.last_action = action
+        return action
+
+
 class GreedyGridAgent:
     """A simple agent that tries to move around systematically to clear the grid."""
 
@@ -19,7 +48,7 @@ class GreedyGridAgent:
 class SearchAgent:
     def __init__(self):
         self.plan = []
-        self.active_algo = 'BFS'
+        self.active_algo = 'AStar'
         self.actions_pool = ['Up', 'Down', 'Left', 'Right']
 
     def manhattan_distance(self, pos, goal):
@@ -29,10 +58,14 @@ class SearchAgent:
     def euclidean_distance(self, pos, goal):
         return math.sqrt((pos[0] - goal[0])**2 + (pos[1] - goal[1])**2)
 
-    def _get_neighbors(self, state, percept):
+    def _get_neighbors(self, state, walls_or_percept, grid_size=None):
         x, y = state
-        width, height = percept['grid_size']
-        walls = set(percept['walls'])
+        if isinstance(walls_or_percept, dict):
+            width, height = walls_or_percept['grid_size']
+            walls = set(walls_or_percept['walls'])
+        else:
+            walls = set(walls_or_percept)
+            width, height = grid_size if grid_size else (10, 10)
         
         neighbors = []
         # Try actions in a fixed order
@@ -52,7 +85,7 @@ class SearchAgent:
                 neighbors.append((action, (nx, ny)))
         return neighbors
 
-    def bfs_search(self, start, goal, percept):
+    def bfs_search(self, start, goal, walls_or_percept, grid_size=None):
         queue = deque([(start, [])])
         reached = set([start])
 
@@ -62,7 +95,7 @@ class SearchAgent:
             if current == goal:
                 return path
 
-            for action, neighbor in self._get_neighbors(current, percept):
+            for action, neighbor in self._get_neighbors(current, walls_or_percept, grid_size):
                 if neighbor not in reached:
                     reached.add(neighbor)
                     queue.append((neighbor, path + [action]))
@@ -123,6 +156,14 @@ class SearchAgent:
                 self.plan = self.dfs_search(agent_pos, closest_food, percept)
             elif self.active_algo == 'UCS':
                 self.plan = self.ucs_search(agent_pos, closest_food, percept)
+            elif self.active_algo == 'AStar':
+                self.plan = self.astar_search(
+                    start_pos=agent_pos,
+                    goal_pos=closest_food,
+                    walls=percept['walls'],
+                    grid_size=percept['grid_size'],
+                    heuristic_type='manhattan'
+                )
                 
             if not self.plan:
                 return random.choice(self.actions_pool)
