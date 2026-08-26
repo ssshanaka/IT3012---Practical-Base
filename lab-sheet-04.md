@@ -64,19 +64,42 @@ a 2D grid.
     Based on your implementation and Lecture 05, complete the following analytical questions.
 16. (Understand) What is the key difference between how Uniform-Cost Search (UCS)
     and A\* Search prioritize which node to explore next?
-    Type your answer here...
+    
+    **Answer:**
+    - **Uniform-Cost Search (UCS):** An uninformed search algorithm that evaluates nodes solely based on the backward path cost from the start node: $f(n) = g(n)$. It expands nodes in uniform-cost concentric contours without any direction toward the goal location.
+    - **A\* Search:** An informed search algorithm that evaluates nodes by combining the actual backward path cost with an estimated forward heuristic cost to the goal: $f(n) = g(n) + h(n)$. This directs node expansion toward the goal, drastically reducing the number of explored nodes while maintaining optimality.
+
 17. (Analyze) In Step 1.1, you used Manhattan Distance. Why is Manhattan Distance
     considered an "admissible" heuristic for this specific 4-way movement grid, and what
     would happen to your A\* algorithm if the heuristic was NOT admissible?
-    Type your answer here...
+    
+    **Answer:**
+    - **Why it is Admissible:** A heuristic $h(n)$ is admissible if it never overestimates the true cost to reach the goal ($h(n) \le h^*(n)$). On a 4-way grid (Up, Down, Left, Right) with unit cost per step, the absolute minimum number of steps between $(x_1, y_1)$ and $(x_2, y_2)$ in an obstacle-free grid is $|x_1 - x_2| + |y_1 - y_2|$. Any obstacles (walls) only increase the true shortest path length ($h^*(n) \ge h(n)$). Therefore, Manhattan distance is always $\le h^*(n)$, guaranteeing admissibility.
+    - **Consequence of Non-Admissibility:** If $h(n)$ is not admissible (i.e., it overestimates the true cost), A* **loses its optimality guarantee**. The search might overestimate the cost of the true optimal path and prematurely terminate with a suboptimal path.
+
 18. (Evaluate) If we modified visual_grid_game.py to allow the agent to move
     diagonally (8-way movement), would Manhattan distance still be an admissible
     heuristic? Why or why not? Which metric should you switch to?
-    Type your answer here...
+    
+    **Answer:**
+    - **Admissibility:** **No**, Manhattan distance would no longer be admissible.
+    - **Why:** In 8-way movement, the agent can move from $(0, 0)$ to $(1, 1)$ in $1$ diagonal step (cost = $1$ or $\sqrt{2} \approx 1.414$). However, Manhattan distance computes $|1 - 0| + |1 - 0| = 2$. Since $h_{\text{Manhattan}}(n) = 2 > h^*(n) = 1$ (or $1.414$), it overestimates the actual cost and violates admissibility.
+    - **Metric to Switch To:**
+      - If diagonal step cost = $1$: Switch to **Chebyshev Distance** ($h(n) = \max(|x_1 - x_2|, |y_1 - y_2|)$).
+      - If diagonal step cost = $\sqrt{2}$: Switch to **Octile Distance** ($h(n) = (\sqrt{2}-1)\min(\Delta x, \Delta y) + \max(\Delta x, \Delta y)$) or **Euclidean Distance** ($h(n) = \sqrt{\Delta x^2 + \Delta y^2}$).
+
 19. (Create) When targeting multiple food items simultaneously, calculating the
     distance to just the single closest food item is a weak heuristic. Propose (in text) a
     stronger heuristic for navigating the grid to eat ALL remaining food efficiently.
-    Type your answer here...
+    
+    **Answer:**
+    A much stronger and admissible heuristic is the **Minimum Spanning Tree (MST) Relaxation Heuristic**:
+    $$h(n) = \text{distance}(\text{agent}, \text{closest\_food}) + \text{cost}(\text{MST}(\text{all\_remaining\_food}))$$
+    - **How it works:**
+      1. Calculate the Manhattan distance from the agent's current position to the nearest remaining food item.
+      2. Construct a Minimum Spanning Tree (MST) connecting all remaining uncollected food items using pairwise Manhattan distances as edge weights.
+      3. Sum the distance to the closest food item and the total edge cost of the MST.
+    - **Why it is stronger & admissible:** Any valid path that collects all food pellets forms a spanning subgraph connecting all food locations. The MST provides the absolute minimum cost tree to interconnect those points without obstacles. Since the true travel path cost must be at least the MST weight plus the cost to reach the first food pellet, this heuristic provides a significantly tighter lower bound while remaining strictly admissible ($h(n) \le h^*(n)$).
     8/24/26, 6:25 PM IT3012 - Practical 04: Informed Search
     https://courseweb.sliit.lk/mod/resource/view.php?id=486693 3/4
     Once Completed Get a PDF of the completed File and Push into the Week 04 branch in
